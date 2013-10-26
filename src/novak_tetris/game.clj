@@ -4,15 +4,16 @@
        [novak-tetris.util]))
 
 (defn next-piece []
-  (let [pd (nth piecedefs (random 7))
-        pc ((first (pd :rots)) :shape)
-        hei (count pc)
-        wid (count (first pc))]
+  (let [pdef (nth piecedefs (random 7))
+        startrot (first (pdef :rots))
+        startshape (startrot :shape)
+        hei (count startshape)
+        wid (count (first startshape))]
     {:x (- 5 (int (/ wid 2)))
-     :y (((first (pd :rots)) :center) 1)
-     :shape (first (pd :rots))
-     :rots (rest (pd :rots))
-     :color (pd :color)}))
+     :y ((startrot :center) 1)
+     :shape startrot
+     :rots (rest (pdef :rots))
+     :color (pdef :color)}))
 
 (defn new-board []
   {:board '()
@@ -23,14 +24,14 @@
 
 (defn board-row [board y]
   (let [rows (board :board)
-        f (- 20 (count rows))
-        i (- y f)]
+        toprow (- 20 (count rows))
+        i (- y toprow)]
     (if (< i 0)
       (repeat 10 nil)
       (nth rows i))))
 
 (defn board-row-mask [board y]
-  (map #(if (nil? %) 0 1) (board-row board y)))
+  (smap #(if (nil? %) 0 1) (board-row board y)))
 
 (defn piece-row [piece y]
   (let [center (get-in piece [:shape :center])
@@ -43,18 +44,17 @@
         cr (piece :color)]
     (if (or (< y y1) (> y y2))
       (repeat 10 nil)
-      (seq
-       (map
-        (fn [x]
-          (if (or (< x x1) (> x x2))
-            nil
-            (if (= 1 (nth (nth (get-in piece [:shape :shape]) ny) (- x x1)))
-              cr
-              nil)))
-        (range 10))))))
+      (smap
+       (fn [x]
+         (if (or (< x x1) (> x x2))
+           nil
+           (if (= 1 (grid-at (get-in piece [:shape :shape]) [(- x x1) ny]))
+             cr
+             nil)))
+       (range 10)))))
 
 (defn piece-row-mask [piece y]
-  (map #(if (nil? %) 0 1) (piece-row piece y)))
+  (smap #(if (nil? %) 0 1) (piece-row piece y)))
 
 (defn inc-piece [piece]
   (reassoc piece :y inc))
@@ -66,24 +66,24 @@
   (reassoc board :piece dec-piece))
 
 (defn merge-rows [r1 r2]
-  (map (fn [a b] (if (nil? a) b a)) r1 r2))
+  (smap (fn [a b] (if (nil? a) b a)) r1 r2))
 
 (defn stop-piece [board]
-  (let [br (map #(board-row board %) (range 20))
-        pcr (map #(piece-row (board :piece) %) (range 20))
-        mr (map merge-rows br pcr)
+  (let [br (smap #(board-row board %) (range 20))
+        pcr (smap #(piece-row (board :piece) %) (range 20))
+        mr (smap merge-rows br pcr)
         ar (drop-while #(apply = nil %) mr)
         fr (filter #(not (not-any? nil? %)) ar)]
     {:board (if (>= (count fr) 20) '() fr) :piece (next-piece)}))
 
 (defn check-overlap [board]
   (let [pc (board :piece)
-        br (map #(board-row-mask board %) (range 20))
-        pcr (map #(piece-row-mask pc %) (range 20))
+        br (smap #(board-row-mask board %) (range 20))
+        pcr (smap #(piece-row-mask pc %) (range 20))
         ov (some #(= 2 %) (map + (flatten br) (flatten pcr)))]
     (-> ov nil? not)))
 
-(defn check-drop [board] ; TODO: drop piece
+(defn check-drop [board]
   (let [pc (board :piece)
         center (get-in pc [:shape :center])
         y (- (pc :y) (center 1))

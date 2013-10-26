@@ -29,8 +29,9 @@
         sh (shape :shape)
         hei (count sh)
         wid (count (first sh))
-        cr (pc :color)]
-    (translate (- ((shape :center) 0)) (- ((shape :center) 1)))
+        cr (pc :color)
+        [cx cy] (shape :center)]
+    (translate (- cx) (- cy))
     (gridrun wid hei
              (fn [x y]
                (if (= 1 (get-in sh [y x]))
@@ -42,7 +43,7 @@
 
   (pop-matrix))
 
-(defn draw-board [board] ; TODO: Draw rows
+(defn draw-board [board]
   (draw-piece (board :piece))
   (maprun
    (fn [y]
