@@ -1,7 +1,8 @@
 (ns novak-tetris.render
   (:use [quil.core]
         [novak-tetris.util]
-        [novak-tetris.const]))
+        [novak-tetris.const]
+        [novak-tetris.game]))
 
 (defn drawtile [cr_]
   (let [cr (color (first cr_) (second cr_) (nth cr_ 2))
@@ -42,4 +43,17 @@
   (pop-matrix))
 
 (defn draw-board [board] ; TODO: Draw rows
-  (draw-piece (board :piece)))
+  (draw-piece (board :piece))
+  (maprun
+   (fn [y]
+     (let [r (board-row board y)]
+       (maprun
+        (fn [x]
+          (if (not (nil? (nth r x)))
+            (do
+              (push-matrix)
+              (translate x y)
+              (drawtile (nth r x))
+              (pop-matrix))))
+        (range 10))))
+   (range 20)))

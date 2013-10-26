@@ -11,4 +11,7 @@
       (fn [x]
         (f x y))
       (range wid)))
-   (range hei)))
+   (range hei)))
+
+(defn reassoc [m k f]
+  (assoc m k (f (m k))))

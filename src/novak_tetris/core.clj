@@ -25,7 +25,7 @@
   (let [mul (min (/ (width) 10) (/ (height) 20))]
     (scale mul))
 
-  (if (= 30 @counter)
+  (if (= 10 @counter)
     (do
       (swap! board inc-board)
       (reset! counter 0))
@@ -38,9 +38,11 @@
 (defn key-pressed []
   (let [k (key-code)]
     (case k
-      39 (swap! board rot-piece)
-      37 (swap! board rot-back-piece)
-      40 (swap! board next-board-piece)
+      65 (swap! board move-piece-left) ; A
+      68 (swap! board move-piece-right) ; D
+      83 (swap! board inc-board) ; S
+      81 (swap! board rot-back-piece) ; Q
+      69 (swap! board rot-piece) ; E
       nil)))
 
 (defn -main []
