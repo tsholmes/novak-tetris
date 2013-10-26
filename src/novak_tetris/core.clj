@@ -1,4 +1,5 @@
 (ns novak-tetris.core
+  (:gen-class)
   (:use [quil.core]
         [novak-tetris.util]
         [novak-tetris.const]
@@ -22,8 +23,11 @@
 
   (push-matrix)
 
-  (let [mul (min (/ (width) 10) (/ (height) 20))]
-    (scale mul))
+  (let [wid (width)
+        hei (height)
+        mul (min (/ wid 16) (/ hei 20))]
+    (scale mul)
+    (translate 3 0))
 
   (if (>= @counter 20)
     (do
@@ -44,6 +48,7 @@
       81 (swap! board rot-back-piece) ; Q
       69 (swap! board rot-piece) ; E
       32 (swap! board #(-> % full-drop inc-board)) ; Space
+      16 (swap! board hold-piece) ; Shift
       nil)))
 
 (defn -main []
@@ -52,6 +57,6 @@
     :setup setup
     :draw draw
     :key-pressed key-pressed
-    :size [300 600]))
+    :size [480 600]))
 
 

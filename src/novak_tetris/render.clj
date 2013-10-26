@@ -58,4 +58,35 @@
                 (draw-tile-border (nth prow x))
                 (pop-matrix))))
           (range 10))))
-     (range 20))))
+     (range 20)))
+  (if (not (nil? (board :hold)))
+    (let [hold (board :hold)
+          hshape (get-in hold [:shape :shape])
+          wid (count (first hshape))
+          hei (count hshape)
+          hcenter (get-in hold [:shape :center])
+          hb {:board '() :piece (assoc hold :x (hcenter 0) :y (hcenter 1))}]
+      (push-matrix)
+      (translate (+ -1.5 (/ wid -2)) (+ 2.5 (/ hei -2)))
+      (maprun
+       (fn [y]
+         (let [prow (piece-row (hb :piece) y)]
+           (maprun
+            (fn [x]
+              (if (not (nil? (nth prow x)))
+                (do
+                  (push-matrix)
+                  (translate x y)
+                  (draw-tile (nth prow x))
+                  (pop-matrix))))
+            (range 10))))
+       (range 20))
+      (pop-matrix)))
+
+  (push-style)
+  (no-fill)
+  (stroke 255)
+  (stroke-weight 0.125)
+  (rect 0 0 10 20)
+  (rect -3 0 3 5)
+  (pop-style))

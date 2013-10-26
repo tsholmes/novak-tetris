@@ -3,21 +3,34 @@
        [novak-tetris.const]
        [novak-tetris.util]))
 
+(defn center-drop-piece [piece]
+  (let [shape (get-in piece [:shape :shape])
+        center (get-in piece [:shape :center])
+        wid (count (first shape))]
+    (if (> wid 2)
+      (let [rots (piece :rots)
+            nr (first rots)
+            nrs (concat (rest rots) [(piece :shape)])]
+        (recur (assoc piece :rots nrs :shape nr)))
+      (assoc piece :x 4 :y (- (center 1))))))
+
 (defn next-piece []
   (let [pdef (nth piecedefs (random 7))
         startrot (first (pdef :rots))
         startshape (startrot :shape)
         hei (count startshape)
         wid (count (first startshape))]
-    {:x (- 5 (int (/ wid 2)))
-     :y ((startrot :center) 1)
-     :shape startrot
-     :rots (rest (pdef :rots))
-     :color (pdef :color)}))
+    (center-drop-piece
+     {:x (- 5 (int (/ wid 2)))
+      :y ((startrot :center) 1)
+      :shape startrot
+      :rots (rest (pdef :rots))
+      :color (pdef :color)})))
 
 (defn new-board []
   {:board '()
-   :piece (next-piece)})
+   :piece (next-piece)
+   :hold nil})
 
 (defn next-board-piece [board]
   (assoc board :piece (next-piece)))
@@ -74,7 +87,7 @@
         mr (smap merge-rows br pcr)
         ar (drop-while #(apply = nil %) mr)
         fr (filter #(not (not-any? nil? %)) ar)]
-    {:board (if (>= (count fr) 20) '() fr) :piece (next-piece)}))
+    (assoc board :board (if (>= (count fr) 20) '() fr) :piece (next-piece))))
 
 (defn check-overlap [board]
   (let [pc (board :piece)
@@ -160,4 +173,11 @@
         nb (assoc board :piece np)]
     (if (or (>= x2 9) (check-overlap nb))
       board
-      nb)))
+      nb)))
+
+(defn hold-piece [board]
+  (if (nil? (board :hold))
+    (assoc board :hold (board :piece) :piece (next-piece))
+    (let [hold (board :hold)
+          piece (board :piece)]
+      (assoc board :hold (center-drop-piece piece) :piece (center-drop-piece hold)))))
