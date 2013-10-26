@@ -4,7 +4,7 @@
         [novak-tetris.const]
         [novak-tetris.game]))
 
-(defn drawtile [cr_]
+(defn draw-tile [cr_]
   (let [cr (color (first cr_) (second cr_) (nth cr_ 2))
         white (color 255 255 255)
         black (color 0 0 0)
@@ -21,40 +21,41 @@
     (fill dk2)
     (quad 0 1 0.2 0.8 0.8 0.8 1 1)))
 
-(defn draw-piece [pc]
-  (push-matrix)
-  (translate (pc :x) (pc :y))
-
-  (let [shape (pc :shape)
-        sh (shape :shape)
-        hei (count sh)
-        wid (count (first sh))
-        cr (pc :color)
-        [cx cy] (shape :center)]
-    (translate (- cx) (- cy))
-    (gridrun wid hei
-             (fn [x y]
-               (if (= 1 (get-in sh [y x]))
-                 (do
-                   (push-matrix)
-                   (translate x y)
-                   (drawtile cr)
-                   (pop-matrix))))))
-
-  (pop-matrix))
+(defn draw-tile-border [cr_]
+  (let [cr (color (first cr_) (second cr_) (nth cr_ 2))]
+    (no-fill)
+    (stroke cr)
+    (stroke-weight 0.125)
+    (rect 0 0 1 1)
+    (no-stroke)))
 
 (defn draw-board [board]
-  (draw-piece (board :piece))
   (maprun
    (fn [y]
-     (let [r (board-row board y)]
+     (let [brow (board-row board y)
+           prow (piece-row (board :piece) y)
+           mrow (merge-rows brow prow)]
        (maprun
         (fn [x]
-          (if (not (nil? (nth r x)))
+          (if (not (nil? (nth mrow x)))
             (do
               (push-matrix)
               (translate x y)
-              (drawtile (nth r x))
+              (draw-tile (nth mrow x))
               (pop-matrix))))
         (range 10))))
-   (range 20)))
+   (range 20))
+  (let [db (full-drop board)]
+    (maprun
+     (fn [y]
+       (let [prow (piece-row (db :piece) y)]
+         (maprun
+          (fn [x]
+            (if (not (nil? (nth prow x)))
+              (do
+                (push-matrix)
+                (translate x y)
+                (draw-tile-border (nth prow x))
+                (pop-matrix))))
+          (range 10))))
+     (range 20))))

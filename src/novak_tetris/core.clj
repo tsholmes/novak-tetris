@@ -25,7 +25,7 @@
   (let [mul (min (/ (width) 10) (/ (height) 20))]
     (scale mul))
 
-  (if (= 10 @counter)
+  (if (>= @counter 20)
     (do
       (swap! board inc-board)
       (reset! counter 0))
@@ -43,6 +43,7 @@
       83 (swap! board inc-board) ; S
       81 (swap! board rot-back-piece) ; Q
       69 (swap! board rot-piece) ; E
+      32 (swap! board #(-> % full-drop inc-board)) ; Space
       nil)))
 
 (defn -main []

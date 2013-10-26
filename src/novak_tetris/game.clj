@@ -83,6 +83,15 @@
         ov (some #(= 2 %) (map + (flatten br) (flatten pcr)))]
     (-> ov nil? not)))
 
+(defn check-oob [piece]
+  (let [center (get-in piece [:shape :center])
+        shape (get-in piece [:shape :shape])
+        x (- (piece :x) (center 0))
+        x2 (+ x (count (first shape)) -1)
+        y (- (piece :y) (center 1))
+        y2 (+ y (count shape) -1)]
+    (or (< x 0) (>= x2 10) (>= y2 20))))
+
 (defn check-drop [board]
   (let [pc (board :piece)
         center (get-in pc [:shape :center])
@@ -92,6 +101,12 @@
       (stop-piece (dec-board board))
       board)))
 
+(defn full-drop [board]
+  (let [nb (assoc board :piece (reassoc (board :piece) :y inc))]
+    (if (or (check-oob (nb :piece)) (check-overlap nb))
+      board
+      (recur nb))))
+
 (defn inc-board [board]
   (check-drop (reassoc board :piece inc-piece)))
 
@@ -100,13 +115,13 @@
         cr (pc :shape)
         nr (first (pc :rots))
         nrs (concat (rest (pc :rots)) [cr])
-        nb (assoc board :piece
-             {:x (pc :x)
-              :y (pc :y)
-              :shape nr
-              :rots nrs
-              :color (pc :color)})]
-    (if (check-overlap nb)
+        np {:x (pc :x)
+            :y (pc :y)
+            :shape nr
+            :rots nrs
+            :color (pc :color)}
+        nb (assoc board :piece np)]
+    (if (or (check-overlap nb) (check-oob np))
       board
       nb)))
 
@@ -115,13 +130,13 @@
         cr (pc :shape)
         nr (last (pc :rots))
         nrs (concat [cr] (butlast (pc :rots)))
-        nb (assoc board :piece
-             {:x (pc :x)
-              :y (pc :y)
-              :shape nr
-              :rots nrs
-              :color (pc :color)})]
-    (if (check-overlap nb)
+        np {:x (pc :x)
+            :y (pc :y)
+            :shape nr
+            :rots nrs
+            :color (pc :color)}
+        nb (assoc board :piece np)]
+    (if (or (check-overlap nb) (check-oob np))
       board
       nb)))
 
