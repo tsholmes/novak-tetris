@@ -72,8 +72,9 @@
   (let [br (map #(board-row board %) (range 20))
         pcr (map #(piece-row (board :piece) %) (range 20))
         mr (map merge-rows br pcr)
-        ar (drop-while #(apply = nil %) mr)]
-    {:board ar :piece (next-piece)}))
+        ar (drop-while #(apply = nil %) mr)
+        fr (filter #(not (not-any? nil? %)) ar)]
+    {:board (if (>= (count fr) 20) '() fr) :piece (next-piece)}))
 
 (defn check-overlap [board]
   (let [pc (board :piece)
