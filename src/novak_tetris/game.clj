@@ -30,7 +30,8 @@
 (defn new-board []
   {:board '()
    :piece (next-piece)
-   :hold nil})
+   :hold nil
+   :swap true})
 
 (defn next-board-piece [board]
   (assoc board :piece (next-piece)))
@@ -87,7 +88,9 @@
         mr (smap merge-rows br pcr)
         ar (drop-while #(apply = nil %) mr)
         fr (filter #(not (not-any? nil? %)) ar)]
-    (assoc board :board (if (>= (count fr) 20) '() fr) :piece (next-piece))))
+    (if (>= (count fr) 20)
+      (new-board)
+      (assoc board :board fr :piece (next-piece) :swap true))))
 
 (defn check-overlap [board]
   (let [pc (board :piece)
@@ -177,7 +180,9 @@
 
 (defn hold-piece [board]
   (if (nil? (board :hold))
-    (assoc board :hold (board :piece) :piece (next-piece))
+    (assoc board :hold (board :piece) :piece (next-piece) :swap false)
     (let [hold (board :hold)
           piece (board :piece)]
-      (assoc board :hold (center-drop-piece piece) :piece (center-drop-piece hold)))))
+      (if (board :swap)
+        (assoc board :hold (center-drop-piece piece) :piece (center-drop-piece hold) :swap false)
+        board))))
