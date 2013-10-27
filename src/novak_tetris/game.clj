@@ -1,6 +1,5 @@
 (ns novak-tetris.game
-  (use [quil.core]
-       [novak-tetris.const]
+  (use [novak-tetris.const]
        [novak-tetris.util]))
 
 (defn center-drop-piece [piece]
@@ -15,7 +14,7 @@
       (assoc piece :x 4 :y (- (center 1))))))
 
 (defn next-piece []
-  (let [pdef (nth piecedefs (random 7))
+  (let [pdef (nth piecedefs (rnd 7))
         startrot (first (pdef :rots))
         startshape (startrot :shape)
         hei (count startshape)

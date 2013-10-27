@@ -1,5 +1,4 @@
-(ns novak-tetris.util
-  (:use quil.core))
+(ns novak-tetris.util)
 
 (defn maprun [f & ls]
   (dorun (apply map f ls)))
@@ -20,4 +19,7 @@
   (nth (nth g y) x))
 
 (defn smap [f & ls]
-  (seq (apply map f ls)))
+  (seq (apply map f ls)))
+
+(defn rnd [n]
+  (int (* (rand) n)))

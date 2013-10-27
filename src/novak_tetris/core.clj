@@ -6,14 +6,13 @@
         [novak-tetris.render]
         [novak-tetris.game]))
 
-(def board (atom nil))
+(def board (atom (new-board)))
 (def counter (atom 0))
 
 (defn setup []
   (smooth)
   (frame-rate 30)
-  (background 0)
-  (reset! board (new-board)))
+  (background 0))
 
 (defn draw []
   (no-stroke)
