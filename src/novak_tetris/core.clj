@@ -9,6 +9,10 @@
 (def board (atom (new-board)))
 (def counter (atom 0))
 
+(defn inc-game []
+  (swap! board inc-board)
+  (reset! counter 0))
+
 (defn setup []
   (smooth)
   (frame-rate 30)
@@ -29,9 +33,7 @@
     (translate 3 0))
 
   (if (>= @counter 20)
-    (do
-      (swap! board inc-board)
-      (reset! counter 0))
+    (inc-game)
     (swap! counter inc))
 
   (draw-board @board)
@@ -43,10 +45,10 @@
     (case k
       65 (swap! board move-piece-left) ; A
       68 (swap! board move-piece-right) ; D
-      83 (swap! board inc-board) ; S
+      83 (inc-game) ; S
       81 (swap! board rot-back-piece) ; Q
       69 (swap! board rot-piece) ; E
-      32 (swap! board #(-> % full-drop inc-board)) ; Space
+      32 (do (swap! board full-drop) (inc-game)) ; Space
       16 (swap! board hold-piece) ; Shift
       nil)))
 
