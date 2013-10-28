@@ -22,4 +22,10 @@
   (seq (apply map f ls)))
 
 (defn rnd [n]
-  (int (* (rand) n)))
+  (int (* (rand) n)))
+
+(defn rot-queue [q e]
+  (concat (rest q) (list e)))
+
+(defn rot-back-queue [q e]
+  (concat (list e) (butlast q)))

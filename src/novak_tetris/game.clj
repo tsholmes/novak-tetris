@@ -15,13 +15,10 @@
 
 (defn next-piece []
   (let [pdef (nth piecedefs (rnd 7))
-        startrot (first (pdef :rots))
-        startshape (startrot :shape)
-        hei (count startshape)
-        wid (count (first startshape))]
+        startrot (first (pdef :rots))]
     (center-drop-piece
-     {:x (- 5 (int (/ wid 2)))
-      :y ((startrot :center) 1)
+     {:x 0
+      :y 0
       :shape startrot
       :rots (rest (pdef :rots))
       :color (pdef :color)})))
@@ -129,7 +126,7 @@
   (let [pc (board :piece)
         cr (pc :shape)
         nr (first (pc :rots))
-        nrs (concat (rest (pc :rots)) [cr])
+        nrs (rot-queue (pc :rots) cr)
         np {:x (pc :x)
             :y (pc :y)
             :shape nr
@@ -144,7 +141,7 @@
   (let [pc (board :piece)
         cr (pc :shape)
         nr (last (pc :rots))
-        nrs (concat [cr] (butlast (pc :rots)))
+        nrs (rot-back-queue (pc :rots) cr)
         np {:x (pc :x)
             :y (pc :y)
             :shape nr
@@ -179,7 +176,7 @@
 
 (defn hold-piece [board]
   (if (nil? (board :hold))
-    (assoc board :hold (board :piece) :piece (next-piece) :swap false)
+    (assoc board :hold (center-drop-piece (board :piece)) :piece (next-piece) :swap false)
     (let [hold (board :hold)
           piece (board :piece)]
       (if (board :swap)
