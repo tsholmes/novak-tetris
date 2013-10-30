@@ -27,7 +27,7 @@
   (let [shape (piece :shape)
         size (piece-sz piece)
         mid (int (/ size 2))]
-    (assoc piece :x mid :y (- 1 size))))
+    (assoc piece :x (- 5 mid) :y (- mid))))
 
 (defn next-piece []
   (let [pdef (nth piecedefs (rnd 7))
@@ -52,7 +52,7 @@
   (let [rows (board :board)
         toprow (- 20 (count rows))
         i (- y toprow)]
-    (if (< i 0)
+    (if (neg? i)
       (repeat 10 nil)
       (nth rows i))))
 
@@ -72,11 +72,9 @@
       (repeat 10 nil)
       (smap
        (fn [x]
-         (if (or (< x x1) (> x x2))
-           nil
-           (if (= 1 (grid-at shape [(- x x1) ny]))
-             color
-             nil)))
+         (when-not (or (< x x1) (> x x2))
+           (when (= 1 (grid-at shape [(- x x1) ny]))
+             color)))
        (range 10)))))
 
 (defn piece-row-mask [piece y]
@@ -92,7 +90,7 @@
   (reassoc board :piece dec-piece))
 
 (defn merge-rows [r1 r2]
-  (smap (fn [a b] (if (nil? a) b a)) r1 r2))
+  (smap (fn [a b] (or a b)) r1 r2))
 
 (defn stop-piece [board]
   (let [piece (board :piece)
@@ -120,7 +118,7 @@
         x2 (bounds :right)
         y (bounds :top)
         y2 (bounds :bottom)]
-    (or (< x 0) (>= x2 10) (>= y2 20))))
+    (or (neg? x) (>= x2 10) (>= y2 20))))
 
 (defn check-drop [board]
   (let [piece (board :piece)

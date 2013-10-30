@@ -37,12 +37,11 @@
            mrow (merge-rows brow prow)]
        (maprun
         (fn [x]
-          (if (not (nil? (nth mrow x)))
-            (do
-              (push-matrix)
-              (translate x y)
-              (draw-tile (nth mrow x))
-              (pop-matrix))))
+          (when (nth mrow x)
+            (push-matrix)
+            (translate x y)
+            (draw-tile (nth mrow x))
+            (pop-matrix)))
         (range 10))))
    (range 20))
   (let [db (full-drop board)]
@@ -51,15 +50,14 @@
        (let [prow (piece-row (db :piece) y)]
          (maprun
           (fn [x]
-            (if (nth prow x)
-              (do
-                (push-matrix)
-                (translate x y)
-                (draw-tile-border (nth prow x))
-                (pop-matrix))))
+            (when (nth prow x)
+              (push-matrix)
+              (translate x y)
+              (draw-tile-border (nth prow x))
+              (pop-matrix)))
           (range 10))))
      (range 20)))
-  (if (not (nil? (board :hold)))
+  (when (board :hold)
     (let [hold (assoc (board :hold) :x 0 :y 0)
           hshape (hold :shape)
           size (piece-sz hold)
@@ -73,12 +71,11 @@
          (let [prow (piece-row (hb :piece) y)]
            (maprun
             (fn [x]
-              (if (nth prow x)
-                (do
-                  (push-matrix)
-                  (translate x y)
-                  (draw-tile (nth prow x))
-                  (pop-matrix))))
+              (when (nth prow x)
+                (push-matrix)
+                (translate x y)
+                (draw-tile (nth prow x))
+                (pop-matrix)))
             (range 10))))
        (range 20))
       (pop-matrix)))
