@@ -28,9 +28,9 @@
 
   (let [wid (width)
         hei (height)
-        mul (min (/ wid 16) (/ hei 20))]
+        mul (min (/ wid 20) (/ hei 20))]
     (scale mul)
-    (translate 3 0))
+    (translate 5 0))
 
   (if (>= @counter 20)
     (inc-game)
@@ -58,6 +58,8 @@
     :setup setup
     :draw draw
     :key-pressed key-pressed
-    :size [480 600]))
+    :size [600 600]))
+
+
 
 

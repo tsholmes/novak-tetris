@@ -2,26 +2,42 @@
   (:use [novak-tetris.const]
         [novak-tetris.util]))
 
+(defn piece-sz [piece]
+  (count (piece :shape)))
+
+(defn piece-bounds [piece]
+  (let [shape (piece :shape)
+        shape-t (apply map vector shape)
+        size (piece-sz piece)
+        x1 (piece :x)
+        y1 (piece :y)
+        x2 (+ x1 size -1)
+        y2 (+ y1 size -1)
+        empty-count (fn [x] (count (take-while #(apply = 0 %) x)))
+        top-off (empty-count shape)
+        bottom-off (empty-count (reverse shape))
+        left-off (empty-count shape-t)
+        right-off (empty-count (reverse shape-t))]
+    {:left (+ x1 left-off)
+     :right (- x2 right-off)
+     :top (+ y1 top-off)
+     :bottom (- y2 bottom-off)}))
+
 (defn center-drop-piece [piece]
-  (let [shape (get-in piece [:shape :shape])
-        center (get-in piece [:shape :center])
-        wid (count (first shape))]
-    (if (> wid 2)
-      (let [rots (piece :rots)
-            nr (first rots)
-            nrs (concat (rest rots) [(piece :shape)])]
-        (recur (assoc piece :rots nrs :shape nr)))
-      (assoc piece :x 4 :y (- (center 1))))))
+  (let [shape (piece :shape)
+        size (piece-sz piece)
+        mid (int (/ size 2))]
+    (assoc piece :x mid :y (- 1 size))))
 
 (defn next-piece []
   (let [pdef (nth piecedefs (rnd 7))
-        startrot (first (pdef :rots))]
+        color (pdef :color)
+        shape (pdef :shape)]
     (center-drop-piece
      {:x 0
       :y 0
-      :shape startrot
-      :rots (rest (pdef :rots))
-      :color (pdef :color)})))
+      :shape shape
+      :color color})))
 
 (defn new-board []
   {:board '()
@@ -44,22 +60,22 @@
   (smap #(if (nil? %) 0 1) (board-row board y)))
 
 (defn piece-row [piece y]
-  (let [center (get-in piece [:shape :center])
-        shape (get-in piece [:shape :shape])
-        x1 (- (piece :x) (center 0))
-        x2 (+ x1 (count (first shape)) -1)
-        y1 (- (piece :y) (center 1))
-        y2 (+ y1 (count shape) -1)
+  (let [shape (piece :shape)
+        size (piece-sz piece)
+        x1 (piece :x)
+        y1 (piece :y)
+        x2 (+ x1 size -1)
+        y2 (+ y1 size -1)
         ny (- y y1)
-        cr (piece :color)]
+        color (piece :color)]
     (if (or (< y y1) (> y y2))
       (repeat 10 nil)
       (smap
        (fn [x]
          (if (or (< x x1) (> x x2))
            nil
-           (if (= 1 (grid-at (get-in piece [:shape :shape]) [(- x x1) ny]))
-             cr
+           (if (= 1 (grid-at shape [(- x x1) ny]))
+             color
              nil)))
        (range 10)))))
 
@@ -79,8 +95,9 @@
   (smap (fn [a b] (if (nil? a) b a)) r1 r2))
 
 (defn stop-piece [board]
-  (let [br (smap #(board-row board %) (range 20))
-        pcr (smap #(piece-row (board :piece) %) (range 20))
+  (let [piece (board :piece)
+        br (smap #(board-row board %) (range 20))
+        pcr (smap #(piece-row piece %) (range 20))
         mr (smap merge-rows br pcr)
         ar (drop-while #(apply = nil %) mr)
         fr (filter #(not (not-any? nil? %)) ar)]
@@ -96,20 +113,19 @@
     (-> ov nil? not)))
 
 (defn check-oob [piece]
-  (let [center (get-in piece [:shape :center])
-        shape (get-in piece [:shape :shape])
-        x (- (piece :x) (center 0))
-        x2 (+ x (count (first shape)) -1)
-        y (- (piece :y) (center 1))
-        y2 (+ y (count shape) -1)]
+  (let [shape (piece :shape)
+        size (piece-sz piece)
+        bounds (piece-bounds piece)
+        x (bounds :left)
+        x2 (bounds :right)
+        y (bounds :top)
+        y2 (bounds :bottom)]
     (or (< x 0) (>= x2 10) (>= y2 20))))
 
 (defn check-drop [board]
-  (let [pc (board :piece)
-        center (get-in pc [:shape :center])
-        y (- (pc :y) (center 1))
-        y2 (+ y (count (get-in pc [:shape :shape])) -1)]
-    (if (or (>= y2 20) (check-overlap board))
+  (let [piece (board :piece)
+        bounds (piece-bounds piece)]
+    (if (or (>= (bounds :bottom) 20) (check-overlap board))
       (stop-piece (dec-board board))
       board)))
 
@@ -123,54 +139,38 @@
   (check-drop (reassoc board :piece inc-piece)))
 
 (defn rot-piece [board]
-  (let [pc (board :piece)
-        cr (pc :shape)
-        nr (first (pc :rots))
-        nrs (rot-queue (pc :rots) cr)
-        np {:x (pc :x)
-            :y (pc :y)
-            :shape nr
-            :rots nrs
-            :color (pc :color)}
+  (let [piece (board :piece)
+        shape (piece :shape)
+        cw-rot (apply map vector (reverse shape))
+        np (assoc piece :shape cw-rot)
         nb (assoc board :piece np)]
     (if (or (check-overlap nb) (check-oob np))
       board
       nb)))
 
 (defn rot-back-piece [board]
-  (let [pc (board :piece)
-        cr (pc :shape)
-        nr (last (pc :rots))
-        nrs (rot-back-queue (pc :rots) cr)
-        np {:x (pc :x)
-            :y (pc :y)
-            :shape nr
-            :rots nrs
-            :color (pc :color)}
+  (let [piece (board :piece)
+        shape (piece :shape)
+        ccw-rot (reverse (apply map vector shape))
+        np (assoc piece :shape ccw-rot)
         nb (assoc board :piece np)]
     (if (or (check-overlap nb) (check-oob np))
       board
       nb)))
 
 (defn move-piece-left [board]
-  (let [pc (board :piece)
-        center (get-in pc [:shape :center])
-        x (- (pc :x) (center 0))
-        np (reassoc pc :x dec)
+  (let [piece (board :piece)
+        np (reassoc piece :x dec)
         nb (assoc board :piece np)]
-    (if (or (<= x 0) (check-overlap nb))
+    (if (or (check-oob np) (check-overlap nb))
       board
       nb)))
 
 (defn move-piece-right [board]
-  (let [pc (board :piece)
-        center (get-in pc [:shape :center])
-        shape (get-in pc [:shape :shape])
-        x (- (pc :x) (center 0))
-        x2 (+ x (count (first shape)) -1)
-        np (reassoc pc :x inc)
+  (let [piece (board :piece)
+        np (reassoc piece :x inc)
         nb (assoc board :piece np)]
-    (if (or (>= x2 9) (check-overlap nb))
+    (if (or (check-oob np) (check-overlap nb))
       board
       nb)))
 

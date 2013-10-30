@@ -51,7 +51,7 @@
        (let [prow (piece-row (db :piece) y)]
          (maprun
           (fn [x]
-            (if (not (nil? (nth prow x)))
+            (if (nth prow x)
               (do
                 (push-matrix)
                 (translate x y)
@@ -60,20 +60,20 @@
           (range 10))))
      (range 20)))
   (if (not (nil? (board :hold)))
-    (let [hold (board :hold)
-          hshape (get-in hold [:shape :shape])
-          wid (count (first hshape))
-          hei (count hshape)
-          hcenter (get-in hold [:shape :center])
-          hb {:board '() :piece (assoc hold :x (hcenter 0) :y (hcenter 1))}]
+    (let [hold (assoc (board :hold) :x 0 :y 0)
+          hshape (hold :shape)
+          size (piece-sz hold)
+          half-size (/ size 2)
+          bounds (piece-bounds hold)
+          hb {:board '() :piece hold}]
       (push-matrix)
-      (translate (+ -1.5 (/ wid -2)) (+ 2.5 (/ hei -2)))
+      (translate (- -2.5 half-size) (- 2.5 half-size))
       (maprun
        (fn [y]
          (let [prow (piece-row (hb :piece) y)]
            (maprun
             (fn [x]
-              (if (not (nil? (nth prow x)))
+              (if (nth prow x)
                 (do
                   (push-matrix)
                   (translate x y)
@@ -88,5 +88,7 @@
   (stroke 255)
   (stroke-weight 0.125)
   (rect 0 0 10 20)
-  (rect -3 0 3 5)
-  (pop-style))
+  (rect -5 0 5 5)
+  (pop-style))
+
+
