@@ -1,6 +1,6 @@
 (ns novak-tetris.game
-  (use [novak-tetris.const]
-       [novak-tetris.util]))
+  (:use [novak-tetris.const]
+        [novak-tetris.util]))
 
 (defn center-drop-piece [piece]
   (let [shape (get-in piece [:shape :shape])
