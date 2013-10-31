@@ -32,12 +32,15 @@
 (defn next-piece []
   (let [pdef (nth piecedefs (rnd 7))
         color (pdef :color)
-        shape (pdef :shape)]
+        shape (pdef :shape)
+        kicks (pdef :kick)]
     (center-drop-piece
      {:x 0
       :y 0
       :shape shape
-      :color color})))
+      :color color
+      :rot 0
+      :kick kicks})))
 
 (defn new-board []
   {:board '()
@@ -136,15 +139,37 @@
 (defn inc-board [board]
   (check-drop (reassoc board :piece inc-piece)))
 
+(defn kick-piece [board kick]
+  (let [piece (board :piece)
+        x (piece :x)
+        y (piece :y)]
+    (assoc board :piece (assoc piece :x (+ x (kick 0)) :y (+ y (kick 1))))))
+
 (defn rot-piece [board]
   (let [piece (board :piece)
         shape (piece :shape)
         cw-rot (apply map vector (reverse shape))
-        np (assoc piece :shape cw-rot)
-        nb (assoc board :piece np)]
-    (if (or (check-overlap nb) (check-oob np))
-      board
-      nb)))
+        cur-rot (piece :rot)
+        next-rot (mod (+ cur-rot 1) 4)
+        kicks (nth (get-in piece [:kick :cw]) cur-rot)
+        np (assoc piece :shape cw-rot :rot next-rot)
+        nb (assoc board :piece np)
+        kicked-boards (map #(kick-piece nb %) kicks)
+        valid-kick (some #(when (not (or (check-overlap %1) (check-oob (%1 :piece)))) %1) kicked-boards)]
+    (or valid-kick board)))
+
+(defn rot-back-piece [board]
+  (let [piece (board :piece)
+        shape (piece :shape)
+        ccw-rot (reverse (apply map vector shape))
+        cur-rot (piece :rot)
+        next-rot (mod (+ cur-rot 3) 4)
+        kicks (nth (get-in piece [:kick :ccw]) cur-rot)
+        np (assoc piece :shape ccw-rot :rot next-rot)
+        nb (assoc board :piece np)
+        kicked-boards (map #(kick-piece nb %) kicks)
+        valid-kick (some #(when (not (or (check-overlap %1) (check-oob (%1 :piece)))) %1) kicked-boards)]
+    (or valid-kick board)))
 
 (defn rot-back-piece [board]
   (let [piece (board :piece)
