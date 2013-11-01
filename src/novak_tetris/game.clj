@@ -34,19 +34,25 @@
         color (pdef :color)
         shape (pdef :shape)
         kicks (pdef :kick)]
-    (center-drop-piece
-     {:x 0
-      :y 0
-      :shape shape
-      :color color
-      :rot 0
-      :kick kicks})))
+    {:x 0
+     :y 0
+     :shape shape
+     :color color
+     :rot 0
+     :kick kicks}))
 
 (defn new-board []
   {:board '()
-   :piece (next-piece)
+   :piece (center-drop-piece (next-piece))
    :hold nil
-   :swap true})
+   :swap true
+   :queue (map #(do % (next-piece)) (range 4))})
+
+(defn shift-piece [board]
+  (let [queue (board :queue)
+        np (center-drop-piece (first queue))
+        nq (rot-queue queue (next-piece))]
+    (assoc board :queue nq :piece np)))
 
 (defn next-board-piece [board]
   (assoc board :piece (next-piece)))
@@ -104,7 +110,7 @@
         fr (filter #(not (not-any? nil? %)) ar)]
     (if (>= (count fr) 20)
       (new-board)
-      (assoc board :board fr :piece (next-piece) :swap true))))
+      (shift-piece (assoc board :board fr :swap true)))))
 
 (defn check-overlap [board]
   (let [pc (board :piece)
@@ -199,7 +205,7 @@
 
 (defn hold-piece [board]
   (if (nil? (board :hold))
-    (assoc board :hold (center-drop-piece (board :piece)) :piece (next-piece) :swap false)
+    (shift-piece (assoc board :hold (center-drop-piece (board :piece)) :swap true))
     (let [hold (board :hold)
           piece (board :piece)]
       (if (board :swap)

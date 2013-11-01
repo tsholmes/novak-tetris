@@ -62,7 +62,6 @@
           hshape (hold :shape)
           size (piece-sz hold)
           half-size (/ size 2)
-          bounds (piece-bounds hold)
           hb {:board '() :piece hold}]
       (push-matrix)
       (translate (- -2.5 half-size) (- 2.5 half-size))
@@ -76,9 +75,32 @@
                 (translate x y)
                 (draw-tile (nth prow x))
                 (pop-matrix)))
-            (range 10))))
-       (range 20))
+            (range 4))))
+       (range 4))
       (pop-matrix)))
+
+  (maprun-indexed
+   (fn [index piece]
+     (let [shape (piece :shape)
+           size (piece-sz piece)
+           half-size (/ size 2)
+           qb {:board '() :piece piece}]
+       (push-matrix)
+       (translate (+ 12.5 (- half-size)) (+ 2.5 (- half-size) (* index 5)))
+       (maprun
+        (fn [y]
+          (let [prow (piece-row (qb :piece) y)]
+            (maprun
+             (fn [x]
+               (when (nth prow x)
+                 (push-matrix)
+                 (translate x y)
+                 (draw-tile (nth prow x))
+                 (pop-matrix)))
+             (range 4))))
+        (range 4))
+       (pop-matrix)))
+   (board :queue))
 
   (push-style)
   (no-fill)

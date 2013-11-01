@@ -3,6 +3,9 @@
 (defn maprun [f & ls]
   (dorun (apply map f ls)))
 
+(defn maprun-indexed [f ls]
+  (dorun (map-indexed f ls)))
+
 (defn gridrun [wid hei f]
   (maprun
    (fn [y]
@@ -28,4 +31,6 @@
   (concat (rest q) (list e)))
 
 (defn rot-back-queue [q e]
-  (concat (list e) (butlast q)))
+  (concat (list e) (butlast q)))
+
+
