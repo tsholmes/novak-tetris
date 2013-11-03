@@ -109,7 +109,7 @@
         ar (drop-while #(apply = nil %) mr)
         fr (filter #(not (not-any? nil? %)) ar)]
     (if (>= (count fr) 20)
-      (new-board)
+      (shift-piece (assoc board :swap true :hold nil :board '()))
       (shift-piece (assoc board :board fr :swap true)))))
 
 (defn check-overlap [board]

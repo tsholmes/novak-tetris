@@ -108,6 +108,7 @@
   (stroke-weight 0.125)
   (rect 0 0 10 20)
   (rect -5 0 5 5)
+  (rect -5 0 20 20)
   (pop-style))
 
 
