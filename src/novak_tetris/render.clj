@@ -29,7 +29,7 @@
     (rect 0 0 1 1)
     (no-stroke)))
 
-(defn draw-board [board]
+(defn draw-full-board [board]
   (maprun
    (fn [y]
      (let [brow (board-row board y)
@@ -43,63 +43,61 @@
             (draw-tile (nth mrow x))
             (pop-matrix)))
         (range 10))))
-   (range 20))
-  (let [db (full-drop board)]
+   (range 20)))
+
+(defn draw-piece-with [piece drawfunc]
+  (push-matrix)
+  (translate (piece :x) (piece :y))
+  (let [pc (assoc piece :x 0 :y 0)
+        size (piece-sz piece)]
     (maprun
      (fn [y]
-       (let [prow (piece-row (db :piece) y)]
+       (let [prow (piece-row pc y)]
          (maprun
           (fn [x]
             (when (nth prow x)
               (push-matrix)
               (translate x y)
-              (draw-tile-border (nth prow x))
+              (drawfunc (nth prow x))
               (pop-matrix)))
-          (range 10))))
-     (range 20)))
+          (range size))))
+     (range size)))
+  (pop-matrix))
+
+(defn draw-piece [piece]
+  (draw-piece-with piece draw-tile))
+
+(defn draw-piece-border [piece]
+  (draw-piece-with piece draw-tile-border))
+
+(defn with-piece-centered [drawfunc piece]
+  (push-matrix)
+  (let [half-size (/ (piece-sz piece) 2)]
+    (translate (- half-size) (- half-size))
+    (drawfunc piece))
+  (pop-matrix))
+
+(defn draw-board [board]
+  (draw-full-board board)
+
+  (draw-piece-border ((full-drop board) :piece))
+
   (when (board :hold)
-    (let [hold (assoc (board :hold) :x 0 :y 0)
-          hshape (hold :shape)
-          size (piece-sz hold)
-          half-size (/ size 2)
-          hb {:board '() :piece hold}]
-      (push-matrix)
-      (translate (- -2.5 half-size) (- 2.5 half-size))
-      (maprun
-       (fn [y]
-         (let [prow (piece-row (hb :piece) y)]
-           (maprun
-            (fn [x]
-              (when (nth prow x)
-                (push-matrix)
-                (translate x y)
-                (draw-tile (nth prow x))
-                (pop-matrix)))
-            (range 4))))
-       (range 4))
-      (pop-matrix)))
+    (push-matrix)
+    (translate -2.5 2.5)
+
+    (with-piece-centered draw-piece (assoc (board :hold) :x 0 :y 0))
+
+    (pop-matrix))
 
   (maprun-indexed
    (fn [index piece]
-     (let [shape (piece :shape)
-           size (piece-sz piece)
-           half-size (/ size 2)
-           qb {:board '() :piece piece}]
-       (push-matrix)
-       (translate (+ 12.5 (- half-size)) (+ 2.5 (- half-size) (* index 5)))
-       (maprun
-        (fn [y]
-          (let [prow (piece-row (qb :piece) y)]
-            (maprun
-             (fn [x]
-               (when (nth prow x)
-                 (push-matrix)
-                 (translate x y)
-                 (draw-tile (nth prow x))
-                 (pop-matrix)))
-             (range 4))))
-        (range 4))
-       (pop-matrix)))
+     (push-matrix)
+     (translate 12.5 (+ 2.5 (* index 5)))
+
+     (with-piece-centered draw-piece piece)
+
+     (pop-matrix))
    (board :queue))
 
   (push-style)
@@ -110,5 +108,4 @@
   (rect -5 0 5 5)
   (rect -5 0 20 20)
   (pop-style))
-
 

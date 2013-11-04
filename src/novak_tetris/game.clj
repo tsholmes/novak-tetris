@@ -24,29 +24,18 @@
      :bottom (- y2 bottom-off)}))
 
 (defn center-drop-piece [piece]
-  (let [shape (piece :shape)
-        size (piece-sz piece)
-        mid (int (/ size 2))]
+  (let [mid (int (/ (piece-sz piece) 2))]
     (assoc piece :x (- 5 mid) :y (- mid))))
 
 (defn next-piece []
-  (let [pdef (nth piecedefs (rnd 7))
-        color (pdef :color)
-        shape (pdef :shape)
-        kicks (pdef :kick)]
-    {:x 0
-     :y 0
-     :shape shape
-     :color color
-     :rot 0
-     :kick kicks}))
+  (assoc (nth piecedefs (rnd 7)) :x 0 :y 0 :rot 0))
 
 (defn new-board []
   {:board '()
    :piece (center-drop-piece (next-piece))
    :hold nil
    :swap true
-   :queue (map #(do % (next-piece)) (range 4))})
+   :queue (map #(%) (repeat 4 next-piece))})
 
 (defn shift-piece [board]
   (let [queue (board :queue)
@@ -77,14 +66,13 @@
         y2 (+ y1 size -1)
         ny (- y y1)
         color (piece :color)]
-    (if (or (< y y1) (> y y2))
-      (repeat 10 nil)
+    (if (<= y1 y y2)
       (smap
        (fn [x]
-         (when-not (or (< x x1) (> x x2))
-           (when (= 1 (grid-at shape [(- x x1) ny]))
-             color)))
-       (range 10)))))
+         (when (and (<= x1 x x2) (= 1 (grid-at shape [(- x x1) ny])))
+           color))
+       (range 10))
+      (repeat 10 nil))))
 
 (defn piece-row-mask [piece y]
   (smap #(if (nil? %) 0 1) (piece-row piece y)))
@@ -103,11 +91,8 @@
 
 (defn stop-piece [board]
   (let [piece (board :piece)
-        br (smap #(board-row board %) (range 20))
-        pcr (smap #(piece-row piece %) (range 20))
-        mr (smap merge-rows br pcr)
-        ar (drop-while #(apply = nil %) mr)
-        fr (filter #(not (not-any? nil? %)) ar)]
+        mr (smap merge-rows (smap #(board-row board %) (range 20)) (smap #(piece-row piece %) (range 20)))
+        fr (->> mr (drop-while #(apply = nil %)) (filter #(not (not-any? nil? %))))]
     (if (>= (count fr) 20)
       (shift-piece (assoc board :swap true :hold nil :board '()))
       (shift-piece (assoc board :board fr :swap true)))))
@@ -129,10 +114,12 @@
         y2 (bounds :bottom)]
     (or (neg? x) (>= x2 10) (>= y2 20))))
 
+(defn first-valid [& boards]
+  (some #(when-not (or (check-overlap %1) (check-oob (%1 :piece))) %1) boards))
+
 (defn check-drop [board]
-  (let [piece (board :piece)
-        bounds (piece-bounds piece)]
-    (if (or (>= (bounds :bottom) 20) (check-overlap board))
+  (let [piece (board :piece)]
+    (if (or (check-oob piece) (check-overlap board))
       (stop-piece (dec-board board))
       board)))
 
@@ -161,7 +148,7 @@
         np (assoc piece :shape cw-rot :rot next-rot)
         nb (assoc board :piece np)
         kicked-boards (map #(kick-piece nb %) kicks)
-        valid-kick (some #(when (not (or (check-overlap %1) (check-oob (%1 :piece)))) %1) kicked-boards)]
+        valid-kick (apply first-valid kicked-boards)]
     (or valid-kick board)))
 
 (defn rot-back-piece [board]
@@ -174,40 +161,28 @@
         np (assoc piece :shape ccw-rot :rot next-rot)
         nb (assoc board :piece np)
         kicked-boards (map #(kick-piece nb %) kicks)
-        valid-kick (some #(when (not (or (check-overlap %1) (check-oob (%1 :piece)))) %1) kicked-boards)]
+        valid-kick (apply first-valid kicked-boards)]
     (or valid-kick board)))
-
-(defn rot-back-piece [board]
-  (let [piece (board :piece)
-        shape (piece :shape)
-        ccw-rot (reverse (apply map vector shape))
-        np (assoc piece :shape ccw-rot)
-        nb (assoc board :piece np)]
-    (if (or (check-overlap nb) (check-oob np))
-      board
-      nb)))
 
 (defn move-piece-left [board]
   (let [piece (board :piece)
         np (reassoc piece :x dec)
         nb (assoc board :piece np)]
-    (if (or (check-oob np) (check-overlap nb))
-      board
-      nb)))
+    (first-valid nb board)))
 
 (defn move-piece-right [board]
   (let [piece (board :piece)
         np (reassoc piece :x inc)
         nb (assoc board :piece np)]
-    (if (or (check-oob np) (check-overlap nb))
-      board
-      nb)))
+    (first-valid nb board)))
 
 (defn hold-piece [board]
-  (if (nil? (board :hold))
-    (shift-piece (assoc board :hold (center-drop-piece (board :piece)) :swap true))
-    (let [hold (board :hold)
-          piece (board :piece)]
+  (let [hold (board :hold)
+        piece (board :piece)]
+    (if hold
       (if (board :swap)
         (assoc board :hold (center-drop-piece piece) :piece (center-drop-piece hold) :swap false)
-        board))))
+        board)
+      (shift-piece (assoc board :hold (center-drop-piece piece) :swap true)))))
+
+

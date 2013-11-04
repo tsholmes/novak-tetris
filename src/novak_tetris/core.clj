@@ -93,6 +93,4 @@
 (defn -main []
   (run-games (new-user-board)))
 
-
-
 
