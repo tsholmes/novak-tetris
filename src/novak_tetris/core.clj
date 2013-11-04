@@ -12,7 +12,7 @@
 (defn get-keys []
   (let [ks @keys-pressed]
     (swap! keys-pressed empty)
-    ks))
+    (distinct ks)))
 
 (defn setup []
   (smooth)
@@ -53,30 +53,37 @@
   (let [k (key-code)]
     (swap! keys-pressed #(concat % (list k)))))
 
-(defn inc-user-board [_board]
-  (if (nil? (_board :counter))
-    (recur (assoc _board :counter (atom 0)))
-    (let [counter (_board :counter)
-          board (atom _board)
-          inc-game (fn [] (swap! board inc-board) (reset! counter 0))]
-      (maprun
-       (fn [k]
-         (case k
-           65 (swap! board move-piece-left) ; A
-           68 (swap! board move-piece-right) ; D
-           83 (inc-game) ; S
-           81 (swap! board rot-back-piece) ; Q
-           69 (swap! board rot-piece) ; E
-           32 (do (swap! board full-drop) (inc-game)) ; Space
-           16 (swap! board hold-piece) ; Shift
-           nil))
-       (get-keys))
-      (if (>= @counter 20)
-        (do
-          (swap! board inc-board)
-          (reset! counter 0))
-        (swap! counter inc))
-      @board)))
+(defn thread [x fs]
+  (if (empty? fs) x (recur ((first fs) x) (rest fs))))
+
+(defn thread-cond [x [f & fs]]
+  (if f
+    (if ((first f) x)
+      (recur (thread x (-> (second f) list flatten)) fs)
+      (recur x fs))
+    x))
+
+(defn inc-user-board [board]
+  (thread-cond
+   board
+   (concat
+    (list [#(nil? (% :counter)) #(assoc % :counter 0)])
+    (map
+     #(vector (constantly true) %)
+     (smap
+      (fn [k]
+        (case k
+          65 move-piece-left ; A
+          68 move-piece-right ; D
+          83 (list inc-board #(assoc % :counter 0)) ; S
+          81 rot-back-piece ; Q
+          69 rot-piece ; E
+          32 (list full-drop inc-board #(assoc % :counter 0)) ; Space
+          16 hold-piece ; Shift
+          identity))
+      (get-keys)))
+    (list [#(>= (% :counter) 20) (list inc-board #(assoc % :counter 0))]
+          [#(< (% :counter) 20) #(reassoc % :counter inc)]))))
 
 (defn new-user-board []
   {:board (new-board) :update inc-user-board})
